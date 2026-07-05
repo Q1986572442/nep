@@ -1,0 +1,58 @@
+server:
+  port: 9000
+
+spring:
+  application:
+    name: nep-gateway
+  cloud:
+    nacos:
+      config:
+        enabled: false
+        import-check:
+          enabled: false
+      discovery:
+        enabled: true          # 网关启用服务发现，路由改用 lb:// 走负载均衡
+        server-addr: localhost:8848
+        namespace: public
+        group: DEFAULT_GROUP
+    gateway:
+      routes:
+        # ==================== 用户微服务 (:8082) ====================
+        - id: user-service
+          uri: lb://nep-service-user
+          predicates:
+            - Path=/api/user/**,/api/region/**
+          filters:
+            - StripPrefix=0
+
+        # ==================== 反馈微服务 (:8083) ====================
+        - id: feedback-service
+          uri: lb://nep-service-feedback
+          predicates:
+            - Path=/api/feedback/**,/api/feedback-note/**,/api/aqi/**,/api/note/**,/api/assignment/**
+          filters:
+            - StripPrefix=0
+
+        # ==================== 内容微服务 (:8084) ====================
+        - id: content-service
+          uri: lb://nep-service-content
+          predicates:
+            - Path=/api/news/**,/api/knowledge/**,/api/notification/**,/api/banner/**,/api/dict/**,/api/social/**,/api/ai/**,/api/chat/**,/api/statistics/**,/api/decision/**,/api/file/**,/api/log/**,/api/export/**
+          filters:
+            - StripPrefix=0
+
+        # ==================== Knife4j 文档聚合 ====================
+        - id: user-service-doc
+          uri: lb://nep-service-user
+          predicates:
+            - Path=/doc.html,/webjars/**,/v3/api-docs/**
+          filters:
+            - StripPrefix=0
+
+        # ==================== 静态资源（图片等） ====================
+        - id: content-service-static
+          uri: lb://nep-service-content
+          predicates:
+            - Path=/images/**
+          filters:
+            - StripPrefix=0
